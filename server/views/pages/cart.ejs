@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>
+    <%= title %>
+  </title>
+  <link rel='stylesheet' href='/stylesheets/bootstrap.min.css'>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel='stylesheet' href='/stylesheets/cart.css' />
+  <script src='/javascripts/jquery.min.js'></script>
+  <script src='/javascripts/bootstrap.min.js'></script>
+</head>
+<body>
+  <% include ../partials/header %>
+
+  <% if(cartItemList.length > 0) { %>
+  <div class="wrapper" id="wrapper">
+    <h2 class="header"> Shopping Cart</h2>
+    <div class="Border">
+      <table class="table">
+        <thread>
+          <tr>
+            <th>Product ID</th>
+            <th>Product Name</th>
+            <th>Seller Name</th>
+            <th>Pricing</th>
+            <th>Action</th>
+          </tr>
+          <% for(var i=0; i < cartItemList.length; i++){ %>
+            <tr class="rowRecord" data-id="<%= cartItemList[i].id %>">
+              <td class="productId">
+                <%= cartItemList[i].productId %>
+              </td>
+              <td>
+                <%= cartItemList[i].productName %>
+              </td>
+              <td>
+                <%= cartItemList[i].sellerName %>
+              </td>
+              <td class = "pricing">
+                <%= cartItemList[i].pricing %>
+              </td>
+              <td>
+                  <input type="button" class="deleteBtn"  value="Delete">
+
+              </td>
+              
+            </td>
+          </tr>
+                    
+          <% } %>
+                  
+        </thread>
+      </table>
+    </div>
+    <h1 id="totalPrice"> Total Price: </h1>
+    <input type="button" class="Checkout" value="Checkout">
+  </div>
+  <% } else {%>
+    <div class="noItemsWrapper">
+        <div class="circleBorder">
+          <img src ="images/emptycart.png" alt="emptycart" width="80" height="80" class="emptyCartImg">
+        </div>
+        <br>
+        <br>
+        <h2 class="textHeaderEmptyCart"> Your Shopping cart is empty</h2>
+        <p class="textLineEmptyCart">Let's add some stuff to it. Check out our products!</p>
+        <br>
+        <br>
+        <button class="viewShop" onclick="viewShop();" type="button"> Our Products</button>
+    </div>
+    <% } %>
+  
+  <script>
+  totalPrice = 0;
+  var pricing = document.getElementsByClassName('pricing')
+  for (i=0; i<pricing.length; i++)    {
+    price = document.getElementsByClassName('pricing')[i].innerHTML; 
+    price = parseInt(price);       
+    totalPrice += price;
+    console.log(pricing);
+  }
+  document.getElementById('totalPrice').innerHTML = totalPrice;
+  
+  $('.Checkout').click(function () {
+    location.href = "http://localhost:3000/payment";
+  });
+  //   var url = "<%=hostPath%>" + '/' + 'transaction';
+  //   var Records = {
+  //     cartPricing: document.getElementById('totalPrice').innerHTML
+  //   }
+  //   console.log(Records.cartPricing);
+  //   $.ajax({
+  //     url: url,
+  //     type: "POST",
+  //     data: JSON.stringify(Records),
+  //     contentType: "application/json",
+  //     success: function(result){
+  //       alert("Added successfully");
+  //       location.href = "<%=hostPath%>"
+  //     },
+  //     error: function(result){
+  //       alert("Unsuccessful");
+  //       location.href = "<%=hostPath%>"
+  //     }
+  //   })
+
+  // })
+
+  $('.deleteBtn').click(function () {
+    var record_num = $(this).closest("tr").data('id');
+    var itemPricing = $(this).closest("tr").find('.pricing').text().trim();
+    console.log(itemPricing);
+    
+    $.ajax({
+      url: '<%=urlPath%>' + '/' + record_num,
+      type: 'DELETE',
+      success: function (result) {
+        console.log(result.message);
+        var itemToRemove = '.rowRecord[data-id=' + record_num + ']';
+        $(itemToRemove).remove();
+        totalPrice = totalPrice - itemPricing;
+        $('#totalPrice').text(totalPrice);
+      },
+      error: function (result) {
+        alert("Unable to delete student record.");
+        console.log(result.message);
+      }
+    });
+  });
+
+  function viewShop() {
+    location.href = "http://localhost:3000/products";
+  };
+  </script>
+  </body>
+  </html>

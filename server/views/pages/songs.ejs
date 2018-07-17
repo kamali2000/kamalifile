@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+  
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"> </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/js/toastr.js"></script>
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+    <script src="/javascripts/socket.io.js"></script>
+</head>
+
+<style>
+    .file-custom:after {
+        content: "Choose song...";
+    }
+    .file-customImage:after {
+        content: "Choose image...";
+    }
+    footer.page-footer{
+        margin-top:400px !important;
+    }
+    .swal-overlay {
+  background-color: rgba(0, 0, 123, 0.4);
+}
+.swal-modal {
+  background-color: powderblue;
+  border: 3px solid mediumseagreen
+}
+.swal-button {
+  padding: 7px 19px;
+  border-radius: 2px;
+  background-color: #4962B3;
+  font-size: 12px;
+  border: 1px solid white;
+  text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.3);
+}
+.swal-footer {
+  background-color: mediumaquamarine;
+  margin-top: 32px;
+  border-top: 1px solid #E9EEF1;
+  overflow: hidden;
+}
+
+.toast-top-center {
+top: 12px;
+margin: 0 auto;
+left: 33%;
+width:71% !important;
+}
+#toast-container > div {
+    width: 40%;
+}
+
+.toast-top-right{
+    font-size:18px;
+    left:73%;
+    margin-top:60px;
+    width:60%;
+    opacity: 1;
+}
+.toast-success {
+    background-color:#4BB543;
+}
+
+#output{
+    /* border-radius:50%; */
+    /*display: inline; */
+    position: relative;
+    top:30px;
+    display:none;
+    width: 140px;
+    height: 140px;
+    float:left;
+    margin-right:15px;
+}
+#textForImage{
+   position: relative;
+   top:66px;
+   color:blue;
+   text-decoration: underline;
+   text-transform: uppercase;
+   font-weight: bold;
+}
+
+.col-lg-2{
+    padding-left:0px !important; /* if not got small gap between col-lg-10 and col-lg-2 delete btn*/
+}
+
+#songImageSize{
+    width: 250px;
+    height: 150px;
+    float:left;
+    margin-right:10px;
+}
+
+#cssDeleteBtn{
+    padding:6px;
+    margin-top:60px;
+}
+
+.byWho{
+    font-size:18px;
+    font-weight: bold;
+    padding: 10px; 
+}
+
+.marked {
+  background-color: lightgreen;
+  font-size:20px;
+}
+
+.unmarked {
+  background-color: lightblue;
+  color:blue;
+  font-size:20px;
+}
+
+</style>
+
+<body>
+    <% include ../partials/header %>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <h4 class="text-muted"> Songs </h4>
+            </div>
+            <div class="col-lg-6">
+                <button type="button" class="btn btn-secondary pull-right" data-toggle="modal" data-target="#createSong">
+                    Songs Upload
+                </button>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="createSong" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form action="/songs" method="post" enctype="multipart/form-data">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <h4 class="modal-title" id="myModalLabel">Upload a song </h4>
+                        </div>
+
+                        <div class="modal-body">
+                            <fieldset class="form-group">
+                                <label  for="inputitle">Title</label>
+                                <input type="text" id="inputitle" name="title" class="form-control" placeholder="Song Title" required="">
+                            </fieldset>
+                            <label class="file" style="width: 100%" onclick="$('input[id=lefile]').click();">
+                                <input type="file" id="song" name="song" required="" onchange="checkextension()">
+                                <span class="file-custom"></span>
+                                
+                                <hr>
+                            
+                                <input type="file" id="image" name="image" required="" onchange="loadFile(event);checkextensionImage()">
+                                <span class="file-customImage"></span>
+
+                                 <img id="output"/> <p id="textForImage"> </p>
+                                
+                            </label>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+            <% songs.forEach(function(songs){ %>
+
+            <a href="#" class="list-group-item" data-id="<%= songs.id%>">
+
+                <div class="col-lg-12">    
+                            <form action="/songs" method="delete">
+                    <h4 id="songName" class="list-group-item-heading songTitle"><%= songs.title %></h4>
+                        <audio controls class="audioPlayer">
+                      <source class="sourcePlayer" src="<%= songs.songName %>" type="audio/mpeg" />
+                      </audio>
+
+                    <small class="byWho">Upload by: <%= songs.user_id %></small>
+                    <button type="button" class="btn-primary deleteBtn" value="<%=songs.id%>"> Delete  </button>
+                   
+                            </form> 
+                </div> 
+            </a>
+           
+       <% }); %> 
+
+       <% songs.forEach(function(songs){ %>
+            <div class="col-lg-10 list-group-item addSongId" data-id="<%=songs.id %>"> 
+                
+            <form action="/addsongs" method="post" enctype="multipart/form-data"> <!-- form is unnecessary , can still work without formaction !-->
+                <!-- <h4 id="songId" data-id="<%=songs.id%>"> <%=songs.songName%> </h4> !-->
+                <img id="songImageSize" src="/images/<%= songs.songImage %>"/> 
+                <h4 class="songId" data-id="<%=songs.id%>"> <a href="#" class="aSong" data-id="<%=songs.id%>"> <%=songs.songName%> </a> </h4>
+                <h2 class="likeCount" data-value="<%=songs.songLikeNo%>"> <%=songs.songLikeNo%> </h2>
+                <a href="/users/profile/<%=songs.user_id%>"> <small class="byWho"> Upload by: <%=songs.createdAt%></small> </a>
+                <% if (songs.user_id != user.id) { %>
+                <button type="button" class="unmarked" data-id="<%=songs.id%>" data-value="<%=songs.songLikeNo%>"> 
+                    <i class="fa fa-heart-o"> </i> <%=songs.songLikeNo%>  </button>
+                <% } %>
+                <button type="button" id="cssDeleteBtn" class="btn-danger deleteBtn" value="<%=songs.id%>"> <i class="far fa-trash-alt"> Delete </i>  </button>
+            </div>
+
+            <div class="col-lg-2 btn-group dropright">
+               
+                <!-- <button type="button" class="btn btn-primary">Dropright</button> !-->                                  <!--previously changeSong(this.id) !-->
+                <button type="button" class="list-group-item btn btn-primary" data-id="<%=songs.id%>" id="<%=songs.songName%>" data-value="<%=songs.title%>" onclick=changeSong(this);changeImage()> Play </button>
+                <button type="button" class="list-group-item btn btn-primary dropdown-toggle px-3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-cool ="<%=songs.songName%>" data-id="<%=songs.id%>" id="<%=songs.id%>" onclick=getSongId(this)>
+                    <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <div class="dropdown-menu">
+
+                    
+                    <% playlists.forEach(function(playlists){ %>
+                        <div class="addPlaylist" data-id="<%=playlists.id%>">
+                        <a data-id="<%=playlists.id%>" class="dropdown-item" href="#" data-song="<%=playlists.title%>" onclick=saveChanges()> Add to <%=playlists.title%> </a>
+                        <%=playlists.id%>
+                        </div>
+                    <% }); %>
+                        </form>
+                    <a class="dropdown-item" href="#">Action</a>
+                
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#">Separated link</a>
+                </div>
+            </div>
+            
+            
+        <% }); %>
+            
+            
+            <div class="col-lg-12 list-group-item" data-id="<%=songs.id %>">
+
+                <ul style="list-style: none">
+                    <li> Audio Files
+                      <ul id="list">
+                        <li><a href="#" data-value="http://media.w3.org/2010/07/bunny/04-Death_Becomes_Fur.oga">Death_Becomes_Fur.oga</a></li>
+                        <li><a href="#" data-value="http://media.w3.org/2010/07/bunny/04-Death_Becomes_Fur.mp4">Death_Becomes_Fur.mp4</a></li>
+                        <li><a href="#" data-value="http://media.w3.org/2010/11/rrs006.oga">rrs006.oga</a></li>
+                        <li><a href="#" data-value="http://media.w3.org/2010/05/sound/sound_90.mp3">sound_90.mp3</a></li>
+                      </ul>
+                    </li>
+                </ul>
+
+                <audio id="audioSOF" controls="controls">
+                        <source id="audioSourceSOF" src=""></source>
+                        Your browser does not support the audio format.
+                </audio>
+
+            </div>
+
+
+        </div> <!-- end of row !-->
+
+    </div> <!-- end of container !-->
+
+        <% include ../partials/footer %>
+    
+
+        <script>
+
+                 function htmlDecode(input){
+                var e = document.createElement('div');
+                e.innerHTML = input;
+                return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+                }
+
+function setCookie(cname,cvalue,exdays)
+{
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+                function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+            levelUp();
+        //setTimeout(audioPlayer,3000); // setInterval(audioPlayer,1000)? if place levelup behind audioplayer, use settimeout audioplayer
+            //process.nextTick(audioPlayer);
+                audioPlayer();
+                
+                var myVar = JSON.parse(htmlDecode("<%= JSON.stringify(songs) %>"));
+                
+          function audioPlayer() {
+            
+            
+            //$("#audioPlayer")[0].src.play();
+            var audioPlayer = document.querySelector(".audioPlayer");
+          
+            var audioPlayer1 = document.querySelectorAll(".audioPlayer");
+            //var firstPlayer = audioPlayer[1].src;
+            console.log(audioPlayer);
+            console.log(audioPlayer1);
+            var firstPlayer = document.querySelectorAll(".sourcePlayer")[0];
+            var secondPlayer = document.querySelectorAll(".audioPlayer")[1];
+            var sliced = firstPlayer.src.slice(28);
+            var slicedSecond = secondPlayer.src.slice(29);
+            console.log(firstPlayer.src);
+            console.log("?? " + sliced);
+            console.log("hey" + slicedSecond);
+            var songs = [sliced,slicedSecond];
+            console.log(songs);
+
+            var i = 0;
+
+            audioPlayer.addEventListener('ended',function() {
+                i++;
+                nextSong = document.querySelectorAll(".sourcePlayer")[i].src.slice(28);
+                audioPlayer.src = nextSong;
+                console.log("next song src --  " + nextSong);
+                audioPlayer.load();
+                audioPlayer.play();
+                setCookie('songName' , nextSong)   
+                document.getElementById("songName").innerHTML = "now playing : " + myVar[i].songName.slice(0,-4);
+                if (i==2) {
+                    i = -1;
+                }
+            },false); 
+            /*
+          
+            document.addEventListener('play', function(e){ // listen to play event , pause all video file except target one
+                var audios = document.getElementsByTagName('audio');
+                console.log(e);
+                for(var i = 0; i < audios.length; i++){
+                    if(audios[i] != e.target){
+                        audios[i].pause();
+                    }
+                }
+            }, true); */
+
+        } //end of function audioPlayer()
+
+        function levelUp() {
+        var obj = [[1,2000], [2, 5000] , [3, 6000] , [4,8000] ];
+        
+        console.log(JSON.stringify(obj));
+        console.log(obj);
+        var currentUser = JSON.parse(htmlDecode("<%= JSON.stringify(user) %>"));
+        console.log(currentUser.experience);
+        console.log(currentUser.level);
+        
+        objLength = Object.keys(obj).length;
+        console.log(objLength);
+        
+        for (i=0; i< objLength;i++) {
+            console.log("HEY" + obj[i][0]);
+            
+            if (currentUser.level == obj[i][0]) {
+                //currentUser.level += 1;
+                console.log("???" +obj[i][0]); 
+                console.log(currentUser.experience);
+                if (currentUser.experience > obj[i][1]) { //user level 2 > level2
+                    console.log(currentUser.experience);
+                    currentUser.level +=1;
+                    currentUser.coin = 50;
+                    currentUser.experience = currentUser.experience - obj[i][1];
+                    console.log(currentUser.experience);
+           swal({title:"YOU HAVE LEVELED UP to " + currentUser.level + "!", icon: "http://allwishes.in/wp-content/uploads/2014/05/congratulation-images2.gif"
+           ,button: { text: "Got it!"}} ).then((value)=> {
+               swal({title:'You are currently left with ' + currentUser.experience + ' exp!' ,
+               text:"You gained " + currentUser.coin + " coins!" , button: { text: "Awesome!!"} ,icon:"https://images.cdn3.stockunlimited.net/clipart/employee-showing-thumbs-up_1637121.jpg" });
+           })
+                }
+            }
+        }
+    }
+
+    console.log(" document cookie >> " + document.cookie);
+
+// onload , onbeforeunload , cookies
+
+    var songFirst = document.querySelector(".sourcePlayer").src.slice(28);
+    var song = document.getElementsByTagName('audio')[0];
+
+    window.onload = function() {
+
+        var getThis = getCookie('songCookie');
+        var getSong = getCookie('songName');
+
+        if (getSong == 0) {
+        document.getElementById("songName").innerHTML = "song: " +  getSong;
+        song.src =  songFirst;
+        song.currentTime = getThis;
+        song.play();
+
+        }
+        else{
+        document.getElementById("songName").innerHTML =  "song playing: " + getSong.slice(0,-4);
+        song.src = getSong;
+        song.currentTime = getThis;
+        song.play();
+ 
+        }
+    }
+
+    window.onbeforeunload = function() {
+
+        var songNameBeforeExit = document.querySelector(".audioPlayer").src.slice(28);
+        setCookie('songCookie',song.currentTime);
+        setCookie('songName', songNameBeforeExit);
+
+    }
+
+
+       $(".audioPlayer:not(:first)").hide(); 
+    //   $(".byWho:not(:first)").hide();
+      //  $(".songTitle:not(:first)").hide(); 
+//console.log(docment.getElementsByClassName("deleteBtn"))
+        
+//setInterval(function() { console.log(document.querySelector(":focus")); }, 1000);
+        </script>
+
+       <!-- <script src="/javascripts/test.js"></script> !-->
+       
+        <script>
+            document.getElementById("list").onclick = function(e) {
+                e.preventDefault();
+
+                var elm = e.target;
+                var audio = document.getElementById('audioSOF');
+
+                var source = document.getElementById('audioSourceSOF');
+                source.src = elm.getAttribute('data-value');
+
+                audio.load(); //call this to just preload audio before playing , if dh then wont work.
+                audio.play(); // call this to play song right away
+              
+            }
+        
+        </script>
+    
+        <script>
+            var final_song_id = "";
+            function getSongId(clicked_id) { //press to get song_id to add to playlist
+                //final_song_id = clicked_id;
+                final_song_id = event.srcElement.id;
+                console.log("clicked song_id >> " + final_song_id);
+                console.log("click id data id >> " + $(clicked_id).data("id"));
+                changed_song_name = $(clicked_id).data("cool");
+                console.log("click value songName >> " + $(clicked_id).data("cool"));
+            }
+            
+            function changeSong(change_id) { //when you press play then change song
+                //new_song_id = change_id;
+                new_song_id = event.srcElement.id;
+                console.log("new song id >>> " + new_song_id);
+                var audioPlayer = document.querySelector(".audioPlayer");
+                audioPlayer.src = new_song_id;
+                audioPlayer.load();
+                audioPlayer.play();
+                changed_song_name = $(change_id).data("value");
+                document.getElementById("songName").innerHTML = changed_song_name;
+            }
+
+            function changeImage() {
+                console.log("looooo " + $(this).data().value);
+    
+            }
+            
+        function saveChanges() {
+            console.log("url path >> " + "<%=urlPath%>")
+            var url = "http://localhost:3000/addsongs";
+            var newValues = {
+                //song_id: $(".aSong").attr("data-id"),
+                song_id: final_song_id,
+                playlist_id: $("a:focus").attr("data-id")
+            }
+            //$(".aSong").focus();
+            //var song_id = $("a:focus").attr("data-id");
+            //var newValuesFinal = Object.assign({"song_id":song_id},newValues);
+            console.log("new values " + JSON.stringify(newValues));
+            console.log("playlist id >> " + $('.addPlaylist').data('id'));
+            console.log($(this).closest("div").attr('data-id'));
+            
+            console.log("col-lg-10 songid>> " + $('.col-lg-10.list-group-item.addSongId').attr('data-id'));
+            var songTitleAlert = $("a:focus").attr("data-song");
+            
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: JSON.stringify(newValues),
+                //dataType: "json", //remove this to successfully add playlist??? lol
+                contentType: "application/json",
+                success: function(result){
+                    //alert("Song added to your " + songTitleAlert + " playlist successfully");
+                    toastr.options = {
+                    "debug": false,
+                    "positionClass": "toast-top-right",
+                    "fadeIn": 300,
+                    "fadeOut": 1000,
+                    "timeOut": 6000,
+                    }
+                    toastr.success("song added to your playlist successfully!");
+
+                },
+                error: function(result){
+                    alert("Error adding to playlist");
+                    //discardChanges();
+                }
+            })
+        }
+        </script>
+
+       <script>
+           console.log("<%-urlPath%>")
+        $('.deleteBtn').click(function() {
+                var songs_id = $(this).val();      
+                console.log("<%-urlPath%>" + songs_id);
+                $.ajax({
+                        url: '<%-urlPath%>' + songs_id,
+                        type: 'DELETE',
+                        success: function(result) {
+                            console.log(result.message);
+                            var itemToRemove = '.list-group-item[data-id='+songs_id+']';
+                            $(itemToRemove).remove();
+                        },
+                        error: function(result){
+                            alert("Unable to delete songs.");
+                            console.log(result.message);
+                        } 
+                    });  
+            });
+            
+            //make toastr error same for validation of song and image input.
+            toastr.options = {
+            "debug": false,
+            "positionClass": "toast-top-center",
+            "onclick": null,
+            "fadeIn": 300,
+            "fadeOut": 1000,
+            "timeOut": 2000,
+            }
+
+        function checkextension() {
+            var file = document.querySelector("#song");
+            if ( /\.(mp3|mp4|ogg|ogv)$/i.test(file.files[0].name) === false ) {
+                toastr.error('Only mp3, mp4,ogg, ogv','Song file is not acceptable!');
+                file.value = "";
+            }
+        }
+
+        function checkextensionImage() {
+            var imageFile = document.querySelector("#image");
+            if ( /\.(jpg|jpeg|png)$/i.test(imageFile.files[0].name) === false ) {
+                toastr.error("Only jpg , jpeg , png ", "Image file is not acceptable sorry!");
+                imageFile.value = "";
+                document.getElementById("textForImage").innerHTML = "";
+                document.getElementById("output").style.display = "none";
+            }
+        }
+
+        var loadFile = function(event) {
+        var output = document.getElementById('output');
+        output.style.display = "block";
+        output.src = URL.createObjectURL(event.target.files[0]);
+        document.getElementById("textForImage").innerHTML += "this will be how the photo of your song will be shown to others!";
+        };
+        
+        var currentUser = JSON.parse(htmlDecode("<%= JSON.stringify(user) %>"));
+        var socket = io();
+
+        $('button.unmarked').on('click', function(e) {
+        var $targetButton = $(e.target);
+        if ($targetButton.hasClass('marked')) { // if mark , unmark it
+            onMarkedButtonClick($targetButton);
+            console.log("marking to unmark>> ");
+            var url = "http://localhost:3000/unlikesong";
+            var newValues = {
+                likesong_id:$(this).data("id")
+            }
+            console.log(url);
+            console.log(JSON.stringify(newValues));
+            var thisCount = $(this).data("value");
+            var thisButton = $(this);
+            console.log("thiscount affter" + thisCount);
+            console.log(thisButton[0].innerHTML);
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: JSON.stringify(newValues),
+                //dataType: "json", //remove this to successfully add playlist??? lol
+                contentType: "application/json",
+                success: function(result){
+                    alert("Song unliked successfully");
+                    thisCount = thisCount - 50;
+                    thisButton.data("value",thisCount);
+                    console.log("after unliking >> " + thisCount);
+                    //document.getElementsByClassName("likeCount").innerHTML = thisCount;
+                    thisButton[0].innerHTML = "<i class='fa fa-heart-o'> </i> " + thisCount;
+                    
+                },
+                error: function(result){
+                    alert("Error unliking song");
+                    //discardChanges();
+                }
+            })
+        } 
+        else if ($targetButton.hasClass('unmarked')) { //if unmark , mark it
+            onUnmarkedButtonClick($targetButton);
+            console.log("unmarking to mark >> ");
+            var url = "http://localhost:3000/likesong";
+            var newValues = {
+                likesong_id:$(this).data("id")
+            }
+            console.log(url);
+            console.log(JSON.stringify(newValues));
+            var thisCount = $(this).data("value");
+            var thisButton = $(this);
+            console.log("this count >> " + thisCount);
+            console.log(thisButton[0].innerHTML);
+            //console.log("nearest button " + (this).closest("h2").text(data));
+            var this_like_song_id = $(this).data("id");
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: JSON.stringify(newValues),
+                //dataType: "json", //remove this to successfully add playlist??? lol
+                contentType: "application/json",
+                success: function(result){
+                    alert("Song Liked successfully"); 
+                    thisCount = thisCount + 50;
+                    thisButton.data("value",thisCount);
+                    console.log("after liking >> " + thisCount);
+                    //document.getElementsByClassName("likeCount").innerHTML = "<i class='fa fa-heart-o'> </i>" + thisCount;
+                    thisButton[0].innerHTML = "<i class='fa fa-heart-o'> </i> " + thisCount;
+
+                    
+                    socket.emit("songLikeByUserId", currentUser.id); 
+                    socket.emit("songLikeId", this_like_song_id);
+                },
+                error: function(result){
+                    alert("Error liking song");
+                    //discardChanges();
+                }
+            })
+        }
+
+    });
+
+        function onMarkedButtonClick($button) {
+            $button.removeClass('marked');
+            $button.addClass('unmarked');
+        }
+
+        function onUnmarkedButtonClick($button) {
+            $button.removeClass('unmarked');
+            $button.addClass('marked');
+        }
+        
+
+        var userArrayOfLikeSong = JSON.parse(htmlDecode("<%= JSON.stringify(songlikeuser) %>"));
+        console.log(JSON.stringify(userArrayOfLikeSong));
+
+        userIdArray = [];
+        for (i = 0; i< userArrayOfLikeSong.length; i++) {
+            userIdArray.push(userArrayOfLikeSong[i].song_id);
+        };
+        console.log(userIdArray);
+        console.log(myVar);
+
+        $(".unmarked").each(function() {
+            var checkId = $(this).data("id");
+            console.log("check id>> " + checkId);
+            console.log("this .... ");
+            console.log($(this));
+            for (k=0; k< userIdArray.length; k++) {
+                if (userIdArray[k] == checkId) {
+                    $(this).removeClass('unmarked');
+                    $(this).addClass('marked');
+                }
+            }
+        })
+        /* 
+       function likeChange(like_id) {
+        console.log("url path >> " + "<%=urlPath%>")
+            var url = "http://localhost:3000/likesong";
+            var newValues = {
+                likesong_id:$(like_id).data("id")
+            }
+            console.log(url);
+            console.log("like song id " + JSON.stringify(newValues));
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: JSON.stringify(newValues),
+                //dataType: "json", //remove this to successfully add playlist??? lol
+                contentType: "application/json",
+                success: function(result){
+                    alert("Song liked successfully");
+                },
+                error: function(result){
+                    alert("Error liking song");
+                    //discardChanges();
+                }
+            })
+       }
+       */
+
+
+       </script>
+       
+    </body>
+    </html>
